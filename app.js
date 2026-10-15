@@ -58,6 +58,8 @@ function patternImage(kind,dark){
 function applyAppearance(){
  const dark=document.body.classList.contains('dark'),bg=backgroundPalette.find(p=>p[0]===appearance.background),report=reportPalette.find(p=>p[0]===appearance.report);
  document.body.style.setProperty('--bg',bg[dark?3:2]);
+ const rowColors={linen:['#eef0e6','#354338'],sage:['#e4eedc','#344831'],mint:['#def2e8','#2d4840'],pistachio:['#edf0d5','#42482c'],sky:['#e0eef8','#2b4356'],ice:['#dfeff0','#2c484b'],sand:['#f2e8d7','#4b4030'],lavender:['#eae1f5','#443650'],lilac:['#f1e1ed','#4b3547']};
+ document.body.style.setProperty('--active-row',rowColors[bg[0]][dark?1:0]);
  document.body.style.setProperty('--money-pattern',patternImage(appearance.pattern,dark));
  document.body.style.setProperty('--report-bg',report[2]);
  for(const [id,key,palette]of [['backgroundChoices','background',backgroundPalette],['reportChoices','report',reportPalette],['patternChoices','pattern',patternPalette]]){
