@@ -33,6 +33,7 @@ jobs:
         run: |
           mkdir -p _site
           cp index.html app.js calc.js style.css favicon.svg rate.json _site/
+          cp -R assets _site/assets
           touch _site/.nojekyll
       - uses: actions/upload-pages-artifact@v4
         with:

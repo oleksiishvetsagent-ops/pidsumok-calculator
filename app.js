@@ -51,10 +51,11 @@ const backgroundPalette=[
 ];
 const reportPalette=[['forest','Лісовий','#1c4237'],['pine','Хвойний','#254f49'],['olive','Оливковий','#414b32'],['ocean','Океан','#25475e'],['slate','Блакитний сланець','#3c5065'],['cocoa','Какао','#544638'],['plum','Сливовий','#4c3659'],['violet','Фіолетовий','#45416a']];
 const patternPalette=[['dollar','Долари','$'],['home','Будиночки','⌂'],['dots','Крапки','···'],['none','Без патерну','—']];
-const defaultAppearance={background:'linen',report:'forest',pattern:'dollar'};
+const surfacePalette=[['classic','Класичний'],['liquid','Рідке скло']];
+const defaultAppearance={surface:'classic',background:'linen',report:'forest',pattern:'dollar'};
 const savedAppearance=readStore('deal-appearance')||{};
 let appearance={...defaultAppearance};
-for(const [key,palette]of [['background',backgroundPalette],['report',reportPalette],['pattern',patternPalette]])if(palette.some(p=>p[0]===savedAppearance[key]))appearance[key]=savedAppearance[key];
+for(const [key,palette]of [['surface',surfacePalette],['background',backgroundPalette],['report',reportPalette],['pattern',patternPalette]])if(palette.some(p=>p[0]===savedAppearance[key]))appearance[key]=savedAppearance[key];
 function patternImage(kind,dark){
  const color=dark?'#d9e5df':'#315c4d';const opacity=dark?'.07':'.065';
  const dollar=`<g fill="${color}" fill-opacity="${opacity}" font-family="Georgia,serif" font-size="40"><text x="27" y="53" transform="rotate(-18 40 40)">$</text><text x="107" y="133" transform="rotate(-18 120 120)">$</text></g>`;
@@ -65,6 +66,9 @@ function patternImage(kind,dark){
 }
 function applyAppearance(){
  const dark=document.body.classList.contains('dark'),bg=backgroundPalette.find(p=>p[0]===appearance.background),report=reportPalette.find(p=>p[0]===appearance.report);
+ document.body.classList.toggle('liquid-surface',appearance.surface==='liquid');
+ $('backgroundFieldset').hidden=$('patternFieldset').hidden=appearance.surface==='liquid';
+ $('surfaceChoices').innerHTML=surfacePalette.map(p=>`<button type="button" class="surface-option surface-${p[0]}" data-appearance="surface" data-choice="${p[0]}" aria-pressed="${appearance.surface===p[0]}" aria-label="Стиль фону: ${p[1]}"><span class="surface-thumbnail" aria-hidden="true"></span><span>${p[1]}</span></button>`).join('');
  document.body.style.setProperty('--bg',bg[dark?3:2]);
  const rowColors={linen:['#eef0e6','#354338'],sage:['#e4eedc','#344831'],mint:['#def2e8','#2d4840'],pistachio:['#edf0d5','#42482c'],sky:['#e0eef8','#2b4356'],ice:['#dfeff0','#2c484b'],sand:['#f2e8d7','#4b4030'],lavender:['#eae1f5','#443650'],lilac:['#f1e1ed','#4b3547']};
  document.body.style.setProperty('--active-row',rowColors[bg[0]][dark?1:0]);
