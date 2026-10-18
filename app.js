@@ -1,6 +1,8 @@
 'use strict';
 const $=id=>document.getElementById(id), currency=(n,c='USD')=>new Intl.NumberFormat('uk-UA',{style:'currency',currency:c,currencyDisplay:'narrowSymbol',minimumFractionDigits:2,maximumFractionDigits:2}).format(n), fmt=n=>new Intl.NumberFormat('uk-UA',{maximumFractionDigits:2}).format(n);
-let reportPayer='buyer';
+let reportPayer='buyer',amountUnit='USD';
+const amountToUsd=(value,fx)=>amountUnit==='UAH'?value/fx:value;
+const amountFromUsd=(value,fx)=>amountUnit==='UAH'?value*fx:value;
 let rows=DealCalc.defaults.map(r=>({...r})),mode='price',result=null,rateMeta=null,manual=false,fetching=false,editVersion=0;
 const readStore=k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}},saveStore=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
 if(readStore('deal-theme')==='dark')document.body.classList.add('dark');
@@ -9,7 +11,7 @@ $('theme').onclick=()=>{document.body.classList.toggle('dark');saveStore('deal-t
 function buildRows(){ $('rows').innerHTML=rows.map(r=>`<tr data-row="${r.id}" class="${r.payer==='none'?'disabled-row':''}"><td>${r.name}${r.bank?'<span class="fee-caption">+ 1% банку від суми збору</span>':''}</td><td><div class="fee-edit"><input aria-label="${r.name}: ставка або сума" type="number" min="0" max="1000000000" step="0.01" value="${r.value}" data-field="value"><select class="unit-select" aria-label="${r.name}: одиниця" data-field="unit">${[['%','%'],['UAH','₴'],['USD','$']].map(([v,t])=>`<option value="${v}" ${r.unit===v?'selected':''}>${t}</option>`).join('')}</select></div></td><td><select aria-label="${r.name}: платник" data-field="payer">${[['none','Не враховувати'],['buyer','Покупець'],['seller','Продавець'],['half','Навпіл']].map(([v,t])=>`<option value="${v}" ${r.payer===v?'selected':''}>${t}</option>`).join('')}</select></td><td class="right" id="fee-${r.id}">—</td></tr>`).join(''); }
 buildRows();
 $('rows').addEventListener('input',e=>{const field=e.target.dataset.field;if(!field)return;const row=rows.find(r=>r.id===e.target.closest('tr').dataset.row);row[field]=field==='value'?(e.target.value===''?NaN:Number(e.target.value)):e.target.value;e.target.closest('tr').classList.toggle('disabled-row',row.payer==='none');render()});
-function setMode(next){if(next===mode)return;if(result)$('amount').value=next==='budget'?result.buyerTotal.toFixed(2):result.price.toFixed(2);mode=next;for(const [id,val]of [['modePrice','price'],['modeBudget','budget']]){$(id).classList.toggle('active',mode===val);$(id).setAttribute('aria-pressed',String(mode===val))}$('amountLabel').textContent=mode==='price'?'Ціна квартири':'Загальний бюджет покупця';$('modeHint').textContent=mode==='price'?'Без оформлення та супроводу':'З оформленням та супроводом';render()}
+function setMode(next){if(next===mode)return;if(result)$('amount').value=next==='budget'?amountFromUsd(result.buyerTotal,Number($('fx').value)).toFixed(2):amountFromUsd(result.price,Number($('fx').value)).toFixed(2);mode=next;for(const [id,val]of [['modePrice','price'],['modeBudget','budget']]){$(id).classList.toggle('active',mode===val);$(id).setAttribute('aria-pressed',String(mode===val))}$('amountLabel').textContent=mode==='price'?'Ціна квартири':'Загальний бюджет покупця';$('modeHint').textContent=mode==='price'?'Без оформлення та супроводу':'З оформленням та супроводом';render()}
 $('modePrice').onclick=()=>setMode('price');$('modeBudget').onclick=()=>setMode('budget');
 function invalid(msg){
  result=null;$('error').hidden=!msg;$('error').textContent=msg;$('amountUah').textContent='—';$('budgetNote').hidden=true;
@@ -18,13 +20,13 @@ function invalid(msg){
  for(const [id,label]of [['buyerCard','ПОКУПЦЯ'],['sellerCard','ПРОДАВЦЯ']])$(id).innerHTML=`<div class="report-audience">РОЗРАХУНОК ДЛЯ ${label}</div><p>Вкажи коректні параметри угоди, щоб побачити звіт.</p>`;
 }
 function render(){
- const amount=Number($('amount').value),fx=Number($('fx').value),valuation=Number($('valuation').value);
+ const enteredAmount=Number($('amount').value),fx=Number($('fx').value),valuation=Number($('valuation').value),amount=amountToUsd(enteredAmount,fx);
  if($('amount').value===''){invalid('');return}
  if(!Number.isFinite(fx)||fx<=0||fx>10000){invalid(fetching?'':'Вкажи додатний курс долара або натисни ↻ для оновлення.');return}
- if($('amount').value===''||!Number.isFinite(amount)||amount<0||amount>1e9||!Number.isFinite(valuation)||valuation<0||valuation>1e9||rows.some(r=>!Number.isFinite(r.value)||r.value<0||r.value>1e9)){invalid('Введи невід’ємні суми та ставки (до 1 000 000 000).');return}
- result=mode==='price'?DealCalc.calculate(Math.round(amount*100)/100,fx,valuation,rows):DealCalc.solve(Math.round(amount*100)/100,fx,valuation,rows);
+ if($('amount').value===''||!Number.isFinite(enteredAmount)||enteredAmount<0||enteredAmount>1e9||!Number.isFinite(valuation)||valuation<0||valuation>1e9||rows.some(r=>!Number.isFinite(r.value)||r.value<0||r.value>1e9)){invalid('Введи невід’ємні суми та ставки (до 1 000 000 000).');return}
+ result=mode==='price'?DealCalc.calculate(Math.round(amount*100)/100,fx,valuation,rows):DealCalc.solve(DealCalc.budgetInUsd(enteredAmount,fx,amountUnit),fx,valuation,rows);
  if(!result){invalid('Бюджет менший за обов’язкові платежі. Збільш бюджет або зміни умови оформлення.');return}
- $('error').hidden=true;$('pdfBuyer').disabled=$('pdfSeller').disabled=false;$('amountUah').textContent=currency(amount*fx,'UAH');
+ $('error').hidden=true;$('pdfBuyer').disabled=$('pdfSeller').disabled=false;$('amountUah').textContent=amountUnit==='USD'?currency(amount*fx,'UAH'):currency(amount);
  $('budgetNote').hidden=mode!=='budget';$('budgetNote').textContent='Ціну квартири підібрано в межах бюджету. Залишок після округлення: '+currency(amount-result.buyerTotal)+'.';
  for(const r of result.lines){$('fee-'+r.id).textContent=r.payer==='none'?'—':fmt(r.total);$('fee-'+r.id).title=r.bank?`Збір ${currency(r.tax)} + банк ${currency(r.bank)}`:currency(r.total)}
  renderDetailCard('buyer');renderDetailCard('seller');
@@ -43,8 +45,18 @@ $('showBuyer').onclick=()=>selectReport('buyer');$('showSeller').onclick=()=>sel
 function renderDetailCard(payer){
  if(!result)return;
  const buyer=payer==='buyer',active=result.lines.filter(r=>r[payer]>0),fx=Number($('fx').value),total=buyer?result.buyerTotal:result.sellerTotal;
- $(buyer?'buyerCard':'sellerCard').innerHTML=`<div class="report-grand"><span>${buyer?'Загальний бюджет покупки':'Продавець отримує чистими'}</span><div class="report-amounts"><strong>${currency(total)}</strong><small>(${currency(total*fx,'UAH')})</small></div>${buyer?'<p class="report-reassurance">Усе враховано: квартира, оформлення та супровід угоди.</p>':''}</div><div class="report-meta"><h2 class="report-audience">РОЗРАХУНОК ДЛЯ ${buyer?'ПОКУПЦЯ':'ПРОДАВЦЯ'}</h2><div class="report-date">${todayText} · Курс ${fmt(fx)} грн / $${manual?' · вручну':''}</div></div><div class="report-price"><span>Вартість квартири</span><strong>${currency(result.price)}</strong></div><div class="report-fees"><span>Оформлення та супровід угоди:</span><strong>${buyer?'+':'−'} ${currency(buyer?result.buyerFees:result.sellerFees)}</strong></div><div class="report-section-label">ДЕТАЛЬНО:</div><dl class="report-lines">${active.map(r=>`<div><dt>${r.name}${r.payer==='half'?`<small>Частка ${buyer?'покупця':'продавця'} — 50%</small>`:''}${r.bank?'<small>Комісію банку вже враховано</small>':''}</dt><dd>${currency(r[payer])}${r.id==='notary'?`<small>(${fmt(notaryUah(r,payer))} грн)</small>`:''}</dd></div>`).join('')||'<div class="no-payments">Окремі платежі за оформлення не обрано.</div>'}</dl>`;
+ $(buyer?'buyerCard':'sellerCard').innerHTML=`<div class="report-meta"><h2 class="report-audience">РОЗРАХУНОК ДЛЯ ${buyer?'ПОКУПЦЯ':'ПРОДАВЦЯ'}</h2><div class="report-date">${todayText} · Курс ${fmt(fx)} грн / $${manual?' · вручну':''}</div></div><div class="report-grand"><span>${buyer?'Загальний бюджет покупки':'Продавець отримує чистими'}</span><div class="report-amounts"><strong>${currency(total)}</strong><small>(${fmt(total*fx)+' гривня'})</small></div>${buyer?'<p class="report-reassurance">Усе враховано: квартира, оформлення та супровід угоди.</p>':''}</div><div class="report-price"><span>Вартість квартири</span><strong>${currency(result.price)}</strong></div><div class="report-fees"><span>Оформлення та супровід угоди:</span><strong>${buyer?'+':'−'} ${currency(buyer?result.buyerFees:result.sellerFees)}</strong></div><div class="report-section-label">ДЕТАЛЬНО:</div><dl class="report-lines">${active.map(r=>`<div><dt>${r.name}${r.payer==='half'?`<small>Частка ${buyer?'покупця':'продавця'} — 50%</small>`:''}${r.bank?'<small>Комісію банку вже враховано</small>':''}</dt><dd>${currency(r[payer])}${r.id==='notary'?`<small>(${fmt(notaryUah(r,payer))} грн)</small>`:''}</dd></div>`).join('')||'<div class="no-payments">Окремі платежі за оформлення не обрано.</div>'}</dl>`;
 }
+$('amountCurrency').onclick=()=>{
+ const fx=Number($('fx').value),value=$('amount').value;
+ if(!Number.isFinite(fx)||fx<=0||fx>10000){$('error').hidden=false;$('error').textContent='Спочатку вкажи коректний курс долара.';return}
+ const usd=value===''?null:amountToUsd(Number(value),fx);
+ amountUnit=amountUnit==='USD'?'UAH':'USD';
+ $('amountCurrency').textContent=amountUnit==='USD'?'$':'₴';
+ $('amountCurrency').setAttribute('aria-label',amountUnit==='USD'?'Валюта суми: долари. Перемкнути на гривні':'Валюта суми: гривні. Перемкнути на долари');
+ if(usd!==null&&Number.isFinite(usd))$('amount').value=amountFromUsd(usd,fx).toFixed(2);
+ render();
+};
 $('amount').oninput=render;$('valuation').oninput=render;
 $('fx').oninput=()=>{manual=true;editVersion++;$('rateStatus').textContent='Курс введено вручну';render()};
 const garantSource='https://garant.money/uk-UA/currency_rates/USD-UAH-kyiv';
@@ -79,8 +91,7 @@ function printReport(payer){
  if(!result)return;
  const fx=Number($('fx').value),buyer=payer==='buyer',active=result.lines.filter(r=>r[payer]>0);
  const rateText=manual?'Курс введено вручну':rateMeta?'Курс графіка обмінника Гарант; отримано '+new Date(rateMeta.fetchedAt).toLocaleString('uk-UA',{timeZone:'Europe/Kyiv'}):'Курс введено вручну';
- const pensionBase='оцінки квартири; якщо її не введено — від ціни квартири';
- $('printReport').innerHTML=`<h1>${buyer?'Покупець':'Продавець'} — деталізація</h1><p>Курс: ${fmt(fx)} грн / $ · ${rateText}<br>Оцінка: ${currency(Number($('valuation').value)||result.price)}</p><table><thead><tr><th>Стаття</th><th>Ставка / сума</th><th>Частка</th><th>Сума, $</th><th>Сума, грн</th></tr></thead><tbody><tr><td>Ціна квартири</td><td>—</td><td>100%</td><td>${fmt(result.price)}</td><td>${fmt(result.price*fx)}</td></tr>${active.map(r=>`<tr><td>${r.name}${r.id==='notary'?`<br><small>(${fmt(notaryUah(r,payer))} грн)</small>`:''}${r.bank?'<br><small>1% банку від збору вже враховано</small>':''}</td><td>${fmt(r.value)} ${r.unit==='UAH'?'₴':r.unit==='USD'?'$':'%'}</td><td>${r.payer==='half'?'50%':'100%'}</td><td>${fmt(r[payer])}</td><td>${fmt(r[payer]*fx)}</td></tr>`).join('')}</tbody></table><p class="print-total">${buyer?'Загальний бюджет покупки':'Чистими на руки'}: ${currency(buyer?result.buyerTotal:result.sellerTotal)}</p><p>${currency((buyer?result.buyerTotal:result.sellerTotal)*fx,'UAH')}</p><small>Пенсійний збір у цьому розрахунку — від ${pensionBase}. Комісія агенції — від ціни квартири. ПДФО та військовий збір — від більшої з ціни й оцінки. Банківська комісія становить 1% суми відповідного збору та вже врахована в підсумку. Суми округлюються до центів.</small>`;
+ $('printReport').innerHTML=`<div class="print-header"><span>${todayText}</span><span>Калькулятор угоди</span></div><h1>${buyer?'Покупець':'Продавець'} — деталізація</h1><p>Курс: ${fmt(fx)} грн / $ · ${rateText}<br>Оцінка: ${currency(Number($('valuation').value)||result.price)}</p><table><thead><tr><th>Стаття</th><th>Ставка / сума</th><th>Частка</th><th>Сума, $</th><th>Сума, грн</th></tr></thead><tbody><tr><td>Ціна квартири</td><td>—</td><td>100%</td><td>${fmt(result.price)}</td><td>${fmt(result.price*fx)}</td></tr>${active.map(r=>`<tr><td>${r.name}${r.id==='notary'?`<br><small>(${fmt(notaryUah(r,payer))} грн)</small>`:''}${r.bank?'<br><small>1% банку від збору враховано</small>':''}</td><td>${fmt(r.value)} ${r.unit==='UAH'?'₴':r.unit==='USD'?'$':'%'}</td><td>${r.payer==='half'?'50%':'100%'}</td><td>${fmt(r[payer])}</td><td>${fmt(r[payer]*fx)}</td></tr>`).join('')}</tbody></table><p class="print-total">${buyer?'Загальний бюджет покупки':'Чистими на руки'}: ${currency(buyer?result.buyerTotal:result.sellerTotal)}</p><p>${currency((buyer?result.buyerTotal:result.sellerTotal)*fx,'UAH')}</p><small>Комісія агентства у цьому розрахунку — від фактичної ціни квартири. ПДФО, пенсійний фонд та військовий збір — від більшої з двох сум: ціни квартири та оцінки. Банківська комісія становить 1% суми відповідного збору та вже врахована в підсумку. Суми округлюються до центів.</small>`;
  window.print();
 }
 $('pdfBuyer').onclick=()=>printReport('buyer');$('pdfSeller').onclick=()=>printReport('seller');
@@ -93,7 +104,7 @@ const reportPalette=[['forest','Лісовий','#1c4237'],['pine','Хвойни
 const patternPalette=[['dollar','Долари','$'],['home','Будиночки','⌂'],['dots','Крапки','···'],['none','Без патерну','—']];
 const surfacePalette=[['classic','Класичний'],['liquid','Рідке скло']];
 const motionPalette=[['auto','Як у системі'],['slow','Повільний'],['still','Без руху']];
-const defaultAppearance={motion:'slow',surface:'classic',background:'linen',report:'forest',pattern:'dollar'};
+const defaultAppearance={motion:'slow',surface:'classic',background:'pistachio',report:'forest',pattern:'none'};
 const savedAppearance=readStore('deal-appearance')||{};
 let appearance={...defaultAppearance};
 for(const [key,palette]of [['motion',motionPalette],['surface',surfacePalette],['background',backgroundPalette],['report',reportPalette],['pattern',patternPalette]])if(palette.some(p=>p[0]===savedAppearance[key]))appearance[key]=savedAppearance[key];
