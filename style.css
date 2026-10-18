@@ -103,3 +103,10 @@ body.liquid-surface.dark::before{background-image:linear-gradient(180deg,rgba(0,
  .workspace.fees-collapsed .report-panel{width:100%;flex:1;max-height:none}
  .workspace.fees-collapsed .buyer-card{flex:1}
 }
+
+/* Increase report text while keeping its existing line boxes and spacing. */
+.buyer-card .report-audience{font-size:11px;line-height:15px}.report-meta .report-date{font-size:10px;line-height:12px}.report-grand>span{font-size:12px;line-height:15px}.report-grand .report-amounts small{font-size:11px;line-height:13.5px}
+.report-price{font-size:12px;line-height:15px}.report-price strong{font-size:19px;line-height:24.5px}.report-fees{font-size:11px;line-height:16px}.report-fees strong{font-size:16px;line-height:24px}.report-section-label{font-size:10px;line-height:12px}
+.report-lines div{font-size:12px}.report-lines dt{line-height:16.5px}.report-lines dd{font-size:13px;line-height:18px}.report-lines small{font-size:10px;line-height:13.5px}.report-lines .no-payments{line-height:15px}
+.report-panel .dialog-actions button{font-size:12px;line-height:15px}.report-panel .inline-budget{font-size:11px;line-height:17px}.share-status{font-size:11px;line-height:15px}
+@media(max-width:460px){.report-grand .report-amounts small{font-size:10px;line-height:12px}.report-price strong{font-size:18px;line-height:23px}}
