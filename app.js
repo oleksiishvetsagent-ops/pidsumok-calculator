@@ -82,7 +82,7 @@ function animateParallax(){
  const enabled=document.body.classList.contains('liquid-surface')&&appearance.motion!=='still'&&(appearance.motion==='slow'||!motionPreference.matches);
  const room=Math.min(144,Math.max(80,innerHeight*.15));
  const range=Math.max(1,document.documentElement.scrollHeight-innerHeight);
- const target=enabled?(Math.max(0,Math.min(1,scrollY/range))-.5)*room*1.4:0;
+ const target=enabled?(.5-Math.max(0,Math.min(1,scrollY/range)))*room*1.4:0;
  parallaxPosition=enabled?parallaxPosition+(target-parallaxPosition)*.08:0;
  if(Math.abs(target-parallaxPosition)<.1)parallaxPosition=target;
  document.body.style.setProperty('--liquid-shift',parallaxPosition.toFixed(2)+'px');

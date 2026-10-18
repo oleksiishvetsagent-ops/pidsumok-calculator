@@ -44,3 +44,12 @@ main{padding-bottom:44px}
 @media(prefers-reduced-motion:reduce){body.liquid-surface.motion-explicit::before{transform:translate3d(0,var(--liquid-shift,0px),0);will-change:transform}}
 
 .liquid-surface .header-right{color:var(--report-soft)}
+
+/* Keep the title centered independently of the controls. */
+header{display:grid;grid-template-columns:1fr auto 1fr;gap:16px}.brand{grid-column:2;justify-self:center}.header-right{grid-column:3;justify-self:end;gap:12px}.intro{text-align:center;margin-inline:auto}
+.report-panel{background:var(--report-bg,#1c4237);color:#f7f8ed;border:1px solid #ffffff30;border-radius:18px;box-shadow:0 16px 45px #0002}
+.report-panel .buyer-card{background:transparent;border:0;border-radius:18px 18px 0 0;box-shadow:none}
+#buyerCard{box-shadow:none}#buyerPanel{box-shadow:0 0 0 1px rgb(var(--buyer-glow)/.20),0 0 38px rgb(var(--buyer-glow)/.28),0 18px 70px rgb(var(--buyer-glow)/.16)}
+.report-panel .dialog-actions{margin:0;padding:0 28px 24px}.report-panel .dialog-actions button{background:var(--report-total-bg);color:var(--report-total-ink);font-weight:600;border-radius:8px}
+.report-panel .inline-budget{color:var(--report-soft);background:transparent;text-shadow:none;margin:0;padding:0 28px 18px}
+@media(max-width:640px){header{height:auto;grid-template-columns:1fr;gap:16px;padding:22px 0}.brand{grid-column:1;grid-row:1}.header-right{grid-column:1;grid-row:2;justify-self:center;gap:12px}.intro{padding:28px 0}.report-panel .dialog-actions{padding:0 20px 20px}.report-panel .inline-budget{padding:0 20px 16px}}
