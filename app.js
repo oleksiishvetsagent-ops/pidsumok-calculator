@@ -19,6 +19,7 @@ function invalid(msg){
 }
 function render(){
  const amount=Number($('amount').value),fx=Number($('fx').value),valuation=Number($('valuation').value);
+ if($('amount').value===''){invalid('');return}
  if(!Number.isFinite(fx)||fx<=0||fx>10000){invalid(fetching?'':'Вкажи додатний курс долара або натисни ↻ для оновлення.');return}
  if($('amount').value===''||!Number.isFinite(amount)||amount<0||amount>1e9||!Number.isFinite(valuation)||valuation<0||valuation>1e9||rows.some(r=>!Number.isFinite(r.value)||r.value<0||r.value>1e9)){invalid('Введи невід’ємні суми та ставки (до 1 000 000 000).');return}
  result=mode==='price'?DealCalc.calculate(Math.round(amount*100)/100,fx,valuation,rows):DealCalc.solve(Math.round(amount*100)/100,fx,valuation,rows);
@@ -45,16 +46,40 @@ function renderDetailCard(payer){
  $(buyer?'buyerCard':'sellerCard').innerHTML=`<div class="report-grand"><span>${buyer?'Загальний бюджет покупки':'Продавець отримує чистими'}</span><div class="report-amounts"><strong>${currency(total)}</strong><small>(${currency(total*fx,'UAH')})</small></div>${buyer?'<p class="report-reassurance">Усе враховано: квартира, оформлення та супровід угоди.</p>':''}</div><div class="report-meta"><h2 class="report-audience">РОЗРАХУНОК ДЛЯ ${buyer?'ПОКУПЦЯ':'ПРОДАВЦЯ'}</h2><div class="report-date">${todayText} · Курс ${fmt(fx)} грн / $${manual?' · вручну':''}</div></div><div class="report-price"><span>Вартість квартири</span><strong>${currency(result.price)}</strong></div><div class="report-fees"><span>Оформлення та супровід угоди:</span><strong>${buyer?'+':'−'} ${currency(buyer?result.buyerFees:result.sellerFees)}</strong></div><div class="report-section-label">ДЕТАЛЬНО:</div><dl class="report-lines">${active.map(r=>`<div><dt>${r.name}${r.payer==='half'?`<small>Частка ${buyer?'покупця':'продавця'} — 50%</small>`:''}${r.bank?'<small>Комісію банку вже враховано</small>':''}</dt><dd>${currency(r[payer])}${r.id==='notary'?`<small>(${fmt(notaryUah(r,payer))} грн)</small>`:''}</dd></div>`).join('')||'<div class="no-payments">Окремі платежі за оформлення не обрано.</div>'}</dl>`;
 }
 $('amount').oninput=render;$('valuation').oninput=render;
-$('fx').oninput=()=>{manual=true;editVersion++;$('rateStatus').textContent='Курс введено вручну';$('rateInfo').textContent='Ручний курс використовується для всіх сум. Натисни ↻, щоб повернути автоматичний.';render()};
-function showRate(meta,cached=false){const time=new Intl.DateTimeFormat('uk-UA',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'}).format(new Date(meta.fetchedAt));$('rateStatus').textContent=(Date.now()-Date.parse(meta.fetchedAt)>2*60*60*1000?'Курс старший за 2 год · ':cached?'Збережений курс · ':'Отримано · ')+time;$('rateInfo').innerHTML=`ПриватБанк · готівковий USD: купівля ${fmt(meta.buy)} ₴ / продаж ${fmt(meta.sale)} ₴. Середнє: ${fmt(meta.rate)} ₴. Оновлення щогодини; ↻ перевіряє останній опублікований курс. <a href="https://www.liqpay.ua/en/doc/api/public/exchange" target="_blank" rel="noopener">Джерело</a>`;}
-async function updateRate(){if(fetching)return;fetching=true;const version=editVersion;$('refresh').disabled=true;$('rateStatus').textContent='Отримуємо курс…';try{const response=await fetch('rate.json',{signal:AbortSignal.timeout(12000),cache:'no-store'});if(!response.ok)throw Error('HTTP');const data=await response.json();const usd=data.rates.find(x=>x.ccy==='USD'&&x.base_ccy==='UAH');const buy=Number(usd?.buy),sale=Number(usd?.sale);if(!(buy>0&&sale>=buy&&sale<10000))throw Error('Invalid rate');const meta={buy,sale,rate:Math.round((buy+sale)/2*100)/100,fetchedAt:data.fetchedAt};saveStore('deal-cash-rate',meta);if(version===editVersion){rateMeta=meta;manual=false;$('fx').value=meta.rate.toFixed(2);showRate(meta,Date.now()-Date.parse(meta.fetchedAt)>2*60*60*1000)}}catch{if(version===editVersion){if(manual){$('rateStatus').textContent='Оновлення недоступне · залишено ручний курс'}else if(rateMeta){showRate(rateMeta,true);$('rateStatus').textContent+=' · оновлення не вдалося'}else{$('rateStatus').textContent='Курс недоступний · введи вручну';$('rateInfo').textContent='Не вдалося отримати курс ПриватБанку. Введи курс вручну або повтори оновлення. Вигаданий курс не підставляється.'}}}finally{fetching=false;$('refresh').disabled=false;render()}}
+$('fx').oninput=()=>{manual=true;editVersion++;$('rateStatus').textContent='Курс введено вручну';render()};
+const garantSource='https://garant.money/uk-UA/currency_rates/USD-UAH-kyiv';
+function validGarantRate(meta){return meta?.source==='garant-graph'&&Number.isFinite(meta.rate)&&meta.rate>0&&meta.rate<10000&&Number.isFinite(Date.parse(meta.fetchedAt))&&/^\d{4}-\d{2}-\d{2}$/.test(meta.rateDate||'')}
+function showRate(meta,cached=false){
+ const time=new Intl.DateTimeFormat('uk-UA',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'}).format(new Date(meta.fetchedAt));
+ $('rateStatus').textContent=(Date.now()-Date.parse(meta.fetchedAt)>2*60*60*1000?'Курс старший за 2 год · ':cached?'Збережений курс · ':'Оновлено · ')+time;
+}
+async function updateRate(){
+ if(fetching)return;fetching=true;const version=editVersion;$('refresh').disabled=true;$('rateStatus').textContent='Отримуємо курс…';
+ try{
+  const response=await fetch('rate.json',{signal:AbortSignal.timeout(12000),cache:'no-store'});if(!response.ok)throw Error('HTTP');
+  const meta=await response.json();if(!validGarantRate(meta))throw Error('Invalid Garant rate');
+  saveStore('deal-garant-rate',meta);
+  if(version===editVersion){rateMeta=meta;manual=false;$('fx').value=meta.rate.toFixed(2);showRate(meta)}
+ }catch{
+  if(version===editVersion){
+   if(manual)$('rateStatus').textContent='Оновлення недоступне · залишено ручний курс';
+   else if(rateMeta){showRate(rateMeta,true);$('rateStatus').textContent+=' · оновлення не вдалося'}
+   else $('rateStatus').textContent='Курс Гаранта недоступний · введи вручну';
+  }
+ }finally{fetching=false;$('refresh').disabled=false;render()}
+}
 $('refresh').onclick=updateRate;
-const cached=readStore('deal-cash-rate');if(cached&&Number.isFinite(cached.rate)&&cached.rate>0&&cached.rate<10000&&Number.isFinite(cached.buy)&&Number.isFinite(cached.sale)&&Number.isFinite(Date.parse(cached.fetchedAt))){rateMeta=cached;$('fx').value=cached.rate;showRate(cached,true)}
+const cached=readStore('deal-garant-rate');if(validGarantRate(cached)){rateMeta=cached;$('fx').value=cached.rate;showRate(cached,true)}
+$('quickCalculate').onclick=()=>{
+ render();if(!result){$('error').hidden=false;$('error').textContent=$('amount').value===''?'Введи ціну квартири, щоб порахувати.':$('error').textContent;$('amount').focus();return}
+ $('amount').blur();$('valuation').blur();$('fx').blur();selectReport('buyer');
+ requestAnimationFrame(()=>$('buyerPanel').parentElement.parentElement.scrollIntoView({behavior:motionPreference.matches?'auto':'smooth',block:'start'}));
+};
 function printReport(payer){
  if(!result)return;
  const fx=Number($('fx').value),buyer=payer==='buyer',active=result.lines.filter(r=>r[payer]>0);
- const rateText=manual?'Курс введено вручну':rateMeta?'Середній готівковий курс ПриватБанку; отримано '+new Date(rateMeta.fetchedAt).toLocaleString('uk-UA',{timeZone:'Europe/Kyiv'}):'Курс введено вручну';
- const pensionBase=result.lines.find(r=>r.id==='pension').base==='max'?'більшої з ціни й оцінки':'ціни за договором';
+ const rateText=manual?'Курс введено вручну':rateMeta?'Курс графіка обмінника Гарант; отримано '+new Date(rateMeta.fetchedAt).toLocaleString('uk-UA',{timeZone:'Europe/Kyiv'}):'Курс введено вручну';
+ const pensionBase='оцінки квартири; якщо її не введено — від ціни квартири';
  $('printReport').innerHTML=`<h1>${buyer?'Покупець':'Продавець'} — деталізація</h1><p>Курс: ${fmt(fx)} грн / $ · ${rateText}<br>Оцінка: ${currency(Number($('valuation').value)||result.price)}</p><table><thead><tr><th>Стаття</th><th>Ставка / сума</th><th>Частка</th><th>Сума, $</th><th>Сума, грн</th></tr></thead><tbody><tr><td>Ціна квартири</td><td>—</td><td>100%</td><td>${fmt(result.price)}</td><td>${fmt(result.price*fx)}</td></tr>${active.map(r=>`<tr><td>${r.name}${r.id==='notary'?`<br><small>(${fmt(notaryUah(r,payer))} грн)</small>`:''}${r.bank?'<br><small>1% банку від збору вже враховано</small>':''}</td><td>${fmt(r.value)} ${r.unit==='UAH'?'₴':r.unit==='USD'?'$':'%'}</td><td>${r.payer==='half'?'50%':'100%'}</td><td>${fmt(r[payer])}</td><td>${fmt(r[payer]*fx)}</td></tr>`).join('')}</tbody></table><p class="print-total">${buyer?'Загальний бюджет покупки':'Чистими на руки'}: ${currency(buyer?result.buyerTotal:result.sellerTotal)}</p><p>${currency((buyer?result.buyerTotal:result.sellerTotal)*fx,'UAH')}</p><small>Пенсійний збір у цьому розрахунку — від ${pensionBase}. Комісія агенції — від ціни квартири. ПДФО та військовий збір — від більшої з ціни й оцінки. Банківська комісія становить 1% суми відповідного збору та вже врахована в підсумку. Суми округлюються до центів.</small>`;
  window.print();
 }

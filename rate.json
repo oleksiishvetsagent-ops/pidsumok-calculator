@@ -1,11 +1,9 @@
 {
-  "rates": [
-    {
-      "ccy": "USD",
-      "base_ccy": "UAH",
-      "buy": "44.55000",
-      "sale": "45.15000"
-    }
-  ],
-  "fetchedAt": "2026-10-14T14:57:41.904Z"
+  "source": "garant-graph",
+  "sourceUrl": "https://garant.money/uk-UA/currency_rates/USD-UAH-kyiv",
+  "rate": 44.9,
+  "buy": 44.9,
+  "sale": 44.98,
+  "rateDate": "2026-10-18",
+  "fetchedAt": "2026-10-18T10:19:20.038Z"
 }

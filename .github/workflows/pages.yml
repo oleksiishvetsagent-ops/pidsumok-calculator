@@ -25,14 +25,16 @@ jobs:
         with:
           node-version: '24'
       - name: Verify calculations
-        run: node test.cjs
+        run: |
+          node test.cjs
+          node scripts/rate.test.mjs
       - name: Refresh cash exchange rate
         run: node scripts/update-rate.mjs
       - uses: actions/configure-pages@v5
       - name: Prepare public site
         run: |
           mkdir -p _site
-          cp index.html app.js calc.js style.css favicon.svg rate.json _site/
+          cp index.html app.js share.js calc.js style.css favicon.svg rate.json _site/
           cp -R assets _site/assets
           touch _site/.nojekyll
       - uses: actions/upload-pages-artifact@v4

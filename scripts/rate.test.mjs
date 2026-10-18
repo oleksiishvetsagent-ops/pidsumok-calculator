@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {extractRate,validateStored} from './update-rate.mjs';
+const now=new Date('2026-10-18T09:00:00Z');
+const row={currency:'USD',currency_type:'0',best_bid:44.9,best_ask:44.98,created_at:'2026-10-18'};
+assert.equal(extractRate([{...row,created_at:'2026-10-17',best_bid:44.92},row],now).rate,44.9);
+assert.equal(extractRate([row,{...row,created_at:'2026-10-17',best_bid:44.92}],now).rate,44.9);
+assert.equal(validateStored(extractRate([row],now)).source,'garant-graph');
+for(const bad of [[],[{...row,currency:'EUR'}],[{...row,best_bid:0}],[{...row,created_at:'2026-10-19'}],[{...row,created_at:'2026-10-01'}]])assert.throws(()=>extractRate(bad,now));
+assert.throws(()=>validateStored({source:'privatbank',rate:44.9,fetchedAt:now.toISOString()}));
+console.log('Passed Garant graph selection, ordering, validation and no cross-source fallback.');
