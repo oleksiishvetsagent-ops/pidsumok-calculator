@@ -23,3 +23,24 @@ body.liquid-surface::before{content:"";position:fixed;inset:0;z-index:-1;pointer
 .liquid-surface header{border-color:#e1f3e52b}.liquid-surface .brand,.liquid-surface .intro h1{color:#f1f8f3;text-shadow:0 2px 20px #00130dcc}.liquid-surface .brand-icon{border-color:#cadbd5a0;background:#08251c55}.liquid-surface .intro h1 em{color:#cce3d8}.liquid-surface .header-right{color:#d3e5dd}.liquid-surface footer,.liquid-surface .inline-budget{color:#e2eee8;text-shadow:0 1px 6px #00130d;background:#071d18cc;border-color:#e1f3e52b;border-radius:10px;padding:20px}.liquid-surface .card{box-shadow:0 16px 48px #00130d30}.liquid-surface .intro{max-width:650px}.surface-choices{display:grid;grid-template-columns:1fr 1fr;gap:12px}.surface-option{padding:7px;border:1px solid var(--line);border-radius:10px;background:var(--input);color:var(--ink);text-align:left;font-size:12px;display:grid;gap:8px}.surface-option>span:last-child{padding:0 5px 5px}.surface-option[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}.surface-thumbnail{display:block;height:75px;border-radius:6px}.surface-classic .surface-thumbnail{background:linear-gradient(135deg,#f4f2eb,#dfebe1)}.surface-liquid .surface-thumbnail{background:#071d18 url("assets/liquid-glass-v2.jpg") center/cover no-repeat}#appearanceDialog fieldset[hidden]{display:none}@media print{body.liquid-surface::before{display:none}}
 
 .app{max-width:960px}.summaries{grid-template-columns:minmax(0,628px);justify-content:center;gap:28px}.report-price{border-bottom:0}.report-fees{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:0 0 15px;border-bottom:1px solid #ffffff26;font-size:12px;line-height:1.6}.report-fees strong{font-size:19px;font-weight:500;white-space:nowrap}.report-section-label{font-size:10px;letter-spacing:1px}@media(max-width:460px){.report-fees{gap:10px;font-size:10px}.report-fees strong{font-size:16px}.summaries{gap:24px}}
+
+/* Theme roles follow the chosen report color. */
+button:focus-visible,a:focus-visible{outline-color:var(--accent)}
+.report-brand span,.report-date,.report-section-label,.report-lines small,.report-footer,.no-payments{color:var(--report-muted)}
+.report-lines dt{color:var(--report-soft)}.buyer-card h2 em{color:var(--report-soft)}
+.report-grand{background:var(--report-total-bg);color:var(--report-total-ink)}.report-grand small{color:var(--report-total-ink)}
+.report-grand .report-reassurance{border-color:var(--report-muted)}
+.appearance-preview span{color:var(--report-soft)}
+#buyerCard{box-shadow:0 0 0 1px rgb(var(--buyer-glow)/.20),0 0 38px rgb(var(--buyer-glow)/.28),0 18px 70px rgb(var(--buyer-glow)/.16)}
+body.liquid-surface{background-color:var(--liquid-base)}
+body.liquid-surface::before{inset:calc(-1 * clamp(80px,15vh,144px)) 0;transform:translate3d(0,var(--liquid-shift,0px),0);filter:hue-rotate(var(--liquid-hue,0deg));will-change:transform;transition:filter .45s ease}
+.liquid-surface .intro h1 em{color:var(--report-soft)}.liquid-surface header{border-color:rgb(var(--buyer-glow)/.25)}
+.liquid-surface .brand-icon{border-color:var(--report-muted);background:rgb(var(--buyer-glow)/.08)}
+.liquid-surface .inline-budget{background:var(--liquid-base);color:var(--report-soft)}
+main{padding-bottom:44px}
+@media(prefers-reduced-motion:reduce){body.liquid-surface::before{transform:none;transition:none;will-change:auto}}
+
+.motion-choices{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.motion-option{padding:10px 7px;border:1px solid var(--line);border-radius:8px;background:var(--input);color:var(--ink);font-size:11px}.motion-option[aria-pressed="true"]{border-color:var(--accent);background:var(--tint);box-shadow:0 0 0 1px var(--accent)}
+@media(prefers-reduced-motion:reduce){body.liquid-surface.motion-explicit::before{transform:translate3d(0,var(--liquid-shift,0px),0);will-change:transform}}
+
+.liquid-surface .header-right{color:var(--report-soft)}

@@ -52,10 +52,11 @@ const backgroundPalette=[
 const reportPalette=[['forest','Лісовий','#1c4237'],['pine','Хвойний','#254f49'],['olive','Оливковий','#414b32'],['ocean','Океан','#25475e'],['slate','Блакитний сланець','#3c5065'],['cocoa','Какао','#544638'],['plum','Сливовий','#4c3659'],['violet','Фіолетовий','#45416a']];
 const patternPalette=[['dollar','Долари','$'],['home','Будиночки','⌂'],['dots','Крапки','···'],['none','Без патерну','—']];
 const surfacePalette=[['classic','Класичний'],['liquid','Рідке скло']];
-const defaultAppearance={surface:'classic',background:'linen',report:'forest',pattern:'dollar'};
+const motionPalette=[['auto','Як у системі'],['slow','Повільний'],['still','Без руху']];
+const defaultAppearance={motion:'slow',surface:'classic',background:'linen',report:'forest',pattern:'dollar'};
 const savedAppearance=readStore('deal-appearance')||{};
 let appearance={...defaultAppearance};
-for(const [key,palette]of [['surface',surfacePalette],['background',backgroundPalette],['report',reportPalette],['pattern',patternPalette]])if(palette.some(p=>p[0]===savedAppearance[key]))appearance[key]=savedAppearance[key];
+for(const [key,palette]of [['motion',motionPalette],['surface',surfacePalette],['background',backgroundPalette],['report',reportPalette],['pattern',patternPalette]])if(palette.some(p=>p[0]===savedAppearance[key]))appearance[key]=savedAppearance[key];
 function patternImage(kind,dark){
  const color=dark?'#d9e5df':'#315c4d';const opacity=dark?'.07':'.065';
  const dollar=`<g fill="${color}" fill-opacity="${opacity}" font-family="Georgia,serif" font-size="40"><text x="27" y="53" transform="rotate(-18 40 40)">$</text><text x="107" y="133" transform="rotate(-18 120 120)">$</text></g>`;
@@ -64,16 +65,60 @@ function patternImage(kind,dark){
  if(kind==='none')return 'none';
  return `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160">${kind==='home'?house:kind==='dots'?dots:dollar}</svg>`)}")`;
 }
+function mixColor(hex,other,amount){
+ const a=hex.slice(1).match(/../g).map(n=>parseInt(n,16)),b=other.slice(1).match(/../g).map(n=>parseInt(n,16));
+ return '#'+a.map((n,i)=>Math.round(n+(b[i]-n)*amount).toString(16).padStart(2,'0')).join('');
+}
+function colorHue(hex){
+ const [r,g,b]=hex.slice(1).match(/../g).map(n=>parseInt(n,16)/255),hi=Math.max(r,g,b),lo=Math.min(r,g,b),d=hi-lo;
+ if(!d)return 156;
+ return ((hi===r?(g-b)/d:hi===g?(b-r)/d+2:(r-g)/d+4)*60+360)%360;
+}
+const motionPreference=window.matchMedia('(prefers-reduced-motion: reduce)');
+let parallaxFrame=0,parallaxPosition=0;
+function updateParallax(){if(!parallaxFrame)parallaxFrame=requestAnimationFrame(animateParallax)}
+function animateParallax(){
+ parallaxFrame=0;
+ const enabled=document.body.classList.contains('liquid-surface')&&appearance.motion!=='still'&&(appearance.motion==='slow'||!motionPreference.matches);
+ const room=Math.min(144,Math.max(80,innerHeight*.15));
+ const range=Math.max(1,document.documentElement.scrollHeight-innerHeight);
+ const target=enabled?(Math.max(0,Math.min(1,scrollY/range))-.5)*room*1.4:0;
+ parallaxPosition=enabled?parallaxPosition+(target-parallaxPosition)*.08:0;
+ if(Math.abs(target-parallaxPosition)<.1)parallaxPosition=target;
+ document.body.style.setProperty('--liquid-shift',parallaxPosition.toFixed(2)+'px');
+ if(parallaxPosition!==target)parallaxFrame=requestAnimationFrame(animateParallax);
+}
+window.addEventListener('scroll',updateParallax,{passive:true});
+window.addEventListener('resize',updateParallax);
+window.addEventListener('load',updateParallax);
+motionPreference.addEventListener('change',updateParallax);
 function applyAppearance(){
  const dark=document.body.classList.contains('dark'),bg=backgroundPalette.find(p=>p[0]===appearance.background),report=reportPalette.find(p=>p[0]===appearance.report);
  document.body.classList.toggle('liquid-surface',appearance.surface==='liquid');
+ document.body.classList.toggle('motion-explicit',appearance.motion==='slow');
+ $('motionFieldset').hidden=appearance.surface!=='liquid';
+ $('motionChoices').innerHTML=motionPalette.map(p=>`<button type="button" class="motion-option" data-appearance="motion" data-choice="${p[0]}" aria-pressed="${appearance.motion===p[0]}" aria-label="Рух фону: ${p[1]}">${p[1]}</button>`).join('');
  $('backgroundFieldset').hidden=$('patternFieldset').hidden=appearance.surface==='liquid';
  $('surfaceChoices').innerHTML=surfacePalette.map(p=>`<button type="button" class="surface-option surface-${p[0]}" data-appearance="surface" data-choice="${p[0]}" aria-pressed="${appearance.surface===p[0]}" aria-label="Стиль фону: ${p[1]}"><span class="surface-thumbnail" aria-hidden="true"></span><span>${p[1]}</span></button>`).join('');
  document.body.style.setProperty('--bg',bg[dark?3:2]);
- const rowColors={linen:['#eef0e6','#354338'],sage:['#e4eedc','#344831'],mint:['#def2e8','#2d4840'],pistachio:['#edf0d5','#42482c'],sky:['#e0eef8','#2b4356'],ice:['#dfeff0','#2c484b'],sand:['#f2e8d7','#4b4030'],lavender:['#eae1f5','#443650'],lilac:['#f1e1ed','#4b3547']};
- document.body.style.setProperty('--active-row',rowColors[bg[0]][dark?1:0]);
- document.body.style.setProperty('--money-pattern',patternImage(appearance.pattern,dark));
- document.body.style.setProperty('--report-bg',report[2]);
+ const tone=report[2],white='#ffffff',black='#000000';
+ const tokens=dark?{
+  '--card':mixColor(tone,black,.50),'--ink':mixColor(tone,white,.91),'--muted':mixColor(tone,white,.68),
+  '--line':mixColor(tone,white,.19),'--accent':mixColor(tone,white,.74),'--tint':mixColor(tone,black,.20),
+  '--input':mixColor(tone,black,.33),'--active-row':mixColor(tone,white,.08)
+ }:{
+  '--card':mixColor(tone,white,.98),'--ink':mixColor(tone,black,.24),'--muted':mixColor(tone,white,.24),
+  '--line':mixColor(tone,white,.81),'--accent':tone,'--tint':mixColor(tone,white,.91),
+  '--input':mixColor(tone,white,.96),'--active-row':mixColor(tone,white,.88)
+ };
+ Object.assign(tokens,{'--report-bg':tone,'--report-muted':mixColor(tone,white,.70),'--report-soft':mixColor(tone,white,.86),
+ '--report-total-bg':mixColor(tone,white,.86),'--report-total-ink':mixColor(tone,black,.17),
+ '--liquid-base':mixColor(tone,black,.77),'--liquid-hue':(colorHue(tone)-156).toFixed(1)+'deg'});
+ const glow=mixColor(tone,white,.45).slice(1).match(/../g).map(n=>parseInt(n,16));
+ tokens['--buyer-glow']=glow.join(' ');
+ for(const [key,value]of Object.entries(tokens))document.body.style.setProperty(key,value);
+ document.body.style.setProperty('--money-pattern',patternImage(appearance.pattern,dark).replaceAll(encodeURIComponent(dark?'#d9e5df':'#315c4d'),encodeURIComponent(dark?tokens['--report-soft']:tone)));
+ updateParallax();
  for(const [id,key,palette]of [['backgroundChoices','background',backgroundPalette],['reportChoices','report',reportPalette],['patternChoices','pattern',patternPalette]]){
   $(id).innerHTML=palette.map(p=>`<button type="button" data-appearance="${key}" data-choice="${p[0]}" aria-pressed="${appearance[key]===p[0]}" aria-label="${key==='background'?'Фон':key==='report'?'Звіт':'Патерн'}: ${p[1]}" class="${key==='pattern'?'pattern-option':'swatch-option'}">${key==='pattern'?`<span class="pattern-symbol">${p[2]}</span>`:`<span class="color-dot" style="background:${p[2]}"></span>`}<span>${p[1]}</span></button>`).join('');
  }
