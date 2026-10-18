@@ -87,3 +87,6 @@ header{display:grid;grid-template-columns:1fr auto 1fr;gap:16px}.brand{grid-colu
 /* Compact total and a matching accent outline. */
 .report-panel .report-grand{border:3px solid var(--report-bg);padding:12px 13px}.report-grand>span{font-weight:800}.report-panel .report-price{border-top:0;margin-top:4px}.report-lines dd .notary-uah{display:inline;margin:0 0 0 7px;white-space:nowrap}.report-lines dt{min-width:0}
 @media(max-width:460px){.report-panel .report-grand{padding:10px}.report-lines dd .notary-uah{margin-left:5px}}
+
+.expenses-toggle{display:flex;align-items:center;justify-content:center;width:calc(100% - 40px);margin:0 20px 20px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--tint);color:var(--report-bg);font-size:12px;font-weight:600}.expenses-toggle[hidden],.expense-details[hidden]{display:none}.expenses.is-expanded .expenses-toggle{margin-bottom:16px}
+@media(min-width:861px){.expenses:not(.is-expanded) .expense-details{display:none}.expenses .section-heading{margin-bottom:14px}}

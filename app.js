@@ -179,3 +179,19 @@ $('closeAppearance').onclick=$('doneAppearance').onclick=()=>$('appearanceDialog
 $('appearanceDialog').addEventListener('click',e=>{const button=e.target.closest('[data-appearance]');if(!button)return;appearance[button.dataset.appearance]=button.dataset.choice;saveStore('deal-appearance',appearance);const label=button.getAttribute('aria-label');applyAppearance();Array.from($('appearanceDialog').querySelectorAll('[data-appearance]')).find(b=>b.getAttribute('aria-label')===label)?.focus()});
 $('resetAppearance').onclick=()=>{appearance={...defaultAppearance};saveStore('deal-appearance',appearance);applyAppearance()};
 applyAppearance();
+
+// Keep optional fee editing out of the initial desktop view.
+const expenseDesktop=window.matchMedia('(min-width: 861px)');
+let expensesExpanded=false;
+function syncExpensePanel(){
+ const desktop=expenseDesktop.matches,open=!desktop||expensesExpanded;
+ $('expenseDetails').hidden=!open;
+ $('expensesCard').classList.toggle('is-expanded',open);
+ $('toggleExpenses').hidden=!desktop;
+ $('toggleExpenses').setAttribute('aria-expanded',String(open));
+ $('toggleExpenses').textContent=expensesExpanded?'Згорнути витрати':'Уточнити витрати';
+ updateParallax();
+}
+$('toggleExpenses').onclick=()=>{expensesExpanded=!expensesExpanded;syncExpensePanel()};
+expenseDesktop.addEventListener('change',syncExpensePanel);
+syncExpensePanel();
