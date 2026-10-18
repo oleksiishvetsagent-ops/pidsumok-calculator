@@ -5,8 +5,8 @@ const defaults = [
 {id:'notary',name:'Нотаріальні послуги',value:5000,unit:'UAH',payer:'buyer',bank:false,base:'price'},
 {id:'income',name:'ПДФО',value:5,unit:'%',payer:'none',bank:true,base:'max'},
 {id:'military',name:'Військовий збір',value:5,unit:'%',payer:'none',bank:true,base:'max'},
-{id:'duty',name:'Державне мито',value:1,unit:'%',payer:'none',bank:false,base:'price'},
-{id:'appraisal',name:'Експертна оцінка',value:1000,unit:'UAH',payer:'none',bank:false,base:'price'},
+{id:'duty',name:'Державне мито',value:1,unit:'%',payer:'seller',bank:false,base:'price'},
+{id:'appraisal',name:'Експертна оцінка',value:1000,unit:'UAH',payer:'seller',bank:false,base:'price'},
 {id:'bti',name:'Довідка БТІ',value:2300,unit:'UAH',payer:'none',bank:false,base:'price'},
 {id:'passport',name:'Новий технічний паспорт',value:2500,unit:'UAH',payer:'none',bank:false,base:'price'},
 {id:'other',name:'Інші платежі за оформлення',value:0,unit:'UAH',payer:'none',bank:false,base:'price'}];

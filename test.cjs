@@ -38,3 +38,11 @@ assert.equal(paymentUah(notary,'buyer',44.9),2500.01);assert.equal(paymentUah(no
 const usdRows=defaults.map(r=>r.id==='notary'?{...r,value:100,unit:'USD'}:{...r});
 notary=calculate(80000,44.9,0,usdRows).lines.find(r=>r.id==='notary');assert.equal(paymentUah(notary,'buyer',44.9),4490);
 console.log('Passed native UAH display, half payment allocation and USD conversion.');
+
+// Default seller payments do not add to the buyer's total.
+const sellerDefaults=calculate(80000,40,0,defaults);
+assert.equal(sellerDefaults.lines.find(r=>r.id==='duty').seller,800);
+assert.equal(sellerDefaults.lines.find(r=>r.id==='appraisal').seller,25);
+assert.equal(sellerDefaults.buyerTotal,84933);
+assert.equal(sellerDefaults.sellerFees,825);assert.equal(sellerDefaults.sellerTotal,79175);
+console.log('Passed seller defaults: 1% duty and appraisal, with buyer total unchanged.');

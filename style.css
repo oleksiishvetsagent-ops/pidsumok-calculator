@@ -110,3 +110,6 @@ body.liquid-surface.dark::before{background-image:linear-gradient(180deg,rgba(0,
 .report-lines div{font-size:12px}.report-lines dt{line-height:16.5px}.report-lines dd{font-size:13px;line-height:18px}.report-lines small{font-size:10px;line-height:13.5px}.report-lines .no-payments{line-height:15px}
 .report-panel .dialog-actions button{font-size:12px;line-height:15px}.report-panel .inline-budget{font-size:11px;line-height:17px}.share-status{font-size:11px;line-height:15px}
 @media(max-width:460px){.report-grand .report-amounts small{font-size:10px;line-height:12px}.report-price strong{font-size:18px;line-height:23px}}
+
+/* The house belongs to the selected seller control, never to its options. */
+.payer-control{position:relative;display:block}.payer-house{display:none;position:absolute;left:10px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#f8faf3;pointer-events:none}.payer-control.is-seller .payer-house{display:block}#rows .payer-control.is-seller select[data-field="payer"]{padding-left:29px}
