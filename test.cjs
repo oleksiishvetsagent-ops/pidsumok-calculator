@@ -2,7 +2,7 @@ const assert=require('node:assert/strict');
 const vm=require('node:vm'),fs=require('node:fs');const context={};vm.createContext(context);vm.runInContext(fs.readFileSync('./calc.js','utf8'),context);const {defaults,calculate,solve}=context.DealCalc;
 assert.equal(calculate(80000,40,0,defaults).lines[0].total,808);
 assert.equal(calculate(80000,40,0,defaults).buyerTotal,84933);
-let r=solve(80000,40,0,defaults);assert(r.buyerTotal<=80000);assert(calculate(r.price+.01,40,0,defaults).buyerTotal>80000);assert.equal(r.lines.find(x=>x.id==='notary').total,125);
+let r=solve(80000,40,0,defaults);assert(r.buyerTotal<=80000);assert(calculate(r.price+.01,40,0,defaults).buyerTotal>80000);assert.equal(r.lines.find(x=>x.id==='notary').total,250);
 assert.equal(solve(100,40,0,defaults),null);
 // Pension uses the appraisal when provided, including an appraisal below the price.
 assert.equal(calculate(80000,40,100000,defaults).lines[0].total,1010);
@@ -31,11 +31,11 @@ console.log('Passed UAH budget round-trip and 1000 currency budget bounds.');
 // Preserve native UAH payments instead of converting rounded USD back to UAH.
 const {paymentUah}=context.DealCalc;
 let notary=calculate(80000,44.9,0,defaults).lines.find(r=>r.id==='notary');
-assert.equal(notary.buyer,111.36);assert.equal(paymentUah(notary,'buyer',44.9),5000);assert.equal(paymentUah(notary,'seller',44.9),0);
+assert.equal(notary.total,222.72);assert.equal(notary.buyer,111.36);assert.equal(paymentUah(notary,'buyer',44.9),5000);assert.equal(paymentUah(notary,'seller',44.9),5000);
 const halfRows=defaults.map(r=>r.id==='notary'?{...r,value:5000.01,payer:'half'}:{...r});
 notary=calculate(80000,44.9,0,halfRows).lines.find(r=>r.id==='notary');
 assert.equal(paymentUah(notary,'buyer',44.9),2500.01);assert.equal(paymentUah(notary,'seller',44.9),2500);
-const usdRows=defaults.map(r=>r.id==='notary'?{...r,value:100,unit:'USD'}:{...r});
+const usdRows=defaults.map(r=>r.id==='notary'?{...r,value:100,unit:'USD',payer:'buyer'}:{...r});
 notary=calculate(80000,44.9,0,usdRows).lines.find(r=>r.id==='notary');assert.equal(paymentUah(notary,'buyer',44.9),4490);
 console.log('Passed native UAH display, half payment allocation and USD conversion.');
 
@@ -44,8 +44,8 @@ const sellerDefaults=calculate(80000,40,0,defaults);
 assert.equal(sellerDefaults.lines.find(r=>r.id==='duty').seller,800);
 assert.equal(sellerDefaults.lines.find(r=>r.id==='appraisal').seller,25);
 assert.equal(sellerDefaults.buyerTotal,84933);
-assert.equal(sellerDefaults.sellerFees,825);assert.equal(sellerDefaults.sellerTotal,79175);
-console.log('Passed seller defaults: 1% duty and appraisal, with buyer total unchanged.');
+assert.equal(sellerDefaults.sellerFees,950);assert.equal(sellerDefaults.sellerTotal,79050);
+console.log('Passed seller defaults: 1% duty, appraisal and half the notary, with buyer total unchanged.');
 
 // Grouped editable amounts preserve decimals and never reinterpret invalid input.
 const {formatAmountInput,parseAmountInput}=context.DealCalc;
