@@ -46,3 +46,14 @@ assert.equal(sellerDefaults.lines.find(r=>r.id==='appraisal').seller,25);
 assert.equal(sellerDefaults.buyerTotal,84933);
 assert.equal(sellerDefaults.sellerFees,825);assert.equal(sellerDefaults.sellerTotal,79175);
 console.log('Passed seller defaults: 1% duty and appraisal, with buyer total unchanged.');
+
+// Grouped editable amounts preserve decimals and never reinterpret invalid input.
+const {formatAmountInput,parseAmountInput}=context.DealCalc;
+for(const [raw,formatted,numeric] of [
+ ['1100000','1 100 000',1100000],['80000.50','80 000,50',80000.5],
+ ['1\u00a0100\u202f000,75','1 100 000,75',1100000.75],['1000,','1 000,',1000],
+ ['-1000','-1 000',-1000],['.5',',5',.5],['0000','0 000',0]
+]){assert.equal(formatAmountInput(raw),formatted);assert.equal(parseAmountInput(formatted),numeric);assert.equal(formatAmountInput(formatted),formatted)}
+for(const invalid of ['',',','1,2,3','80000abc','1e6','1.000.000'])assert(Number.isNaN(parseAmountInput(invalid)));
+assert.equal(formatAmountInput('80000abc'),'80000abc');
+console.log('Passed grouped amount editing, decimal preservation and strict validation.');

@@ -18,7 +18,18 @@ function paymentUah(line,payer,fx){
  const tax=cents(line.value),bank=line.bank?Math.round(tax*.01):0,total=tax+bank;
  return (line.payer==='half'?(payer==='buyer'?Math.ceil(total/2):Math.floor(total/2)):total)/100;
 }
+// Keep grouping separate from numeric parsing, including an unfinished decimal while typing.
+function formatAmountInput(value){
+ const compact=String(value).replace(/\s/g,'');
+ if(!/^-?\d*(?:[.,]\d*)?$/.test(compact))return String(value);
+ const [integer,fraction]=compact.replace('.',',').split(',');
+ return integer.replace(/\B(?=(\d{3})+(?!\d))/g,' ')+(fraction===undefined?'':','+fraction);
+}
+function parseAmountInput(value){
+ const compact=String(value).replace(/\s/g,'').replace(',','.');
+ return /^-?(?:\d+(?:\.\d*)?|\.\d+)$/.test(compact)?Number(compact):NaN;
+}
 function budgetInUsd(amount,fx,unit='USD'){if(unit!=='UAH')return cents(amount)/100;let budget=cents(amount/fx);if(cents(budget/100*fx)>cents(amount))budget--;return budget/100}
 function solve(budget,fx,valuation,rows){if(calculate(0,fx,valuation,rows).buyerTotal>budget)return null;let lo=0,hi=cents(budget);while(lo<hi){const mid=Math.ceil((lo+hi)/2);if(cents(calculate(mid/100,fx,valuation,rows).buyerTotal)<=cents(budget))lo=mid;else hi=mid-1}return calculate(lo/100,fx,valuation,rows)}
-root.DealCalc={defaults,calculate,solve,budgetInUsd,paymentUah};if(typeof module!=='undefined')module.exports=root.DealCalc;
+root.DealCalc={defaults,calculate,solve,budgetInUsd,paymentUah,formatAmountInput,parseAmountInput};if(typeof module!=='undefined')module.exports=root.DealCalc;
 })(typeof window==='undefined'?globalThis:window);

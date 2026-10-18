@@ -1,8 +1,9 @@
 'use strict';
-const $=id=>document.getElementById(id), currency=(n,c='USD')=>new Intl.NumberFormat('uk-UA',{style:'currency',currency:c,currencyDisplay:'narrowSymbol',minimumFractionDigits:2,maximumFractionDigits:2}).format(n), fmt=n=>new Intl.NumberFormat('uk-UA',{maximumFractionDigits:2}).format(n);
+const $=id=>document.getElementById(id), currency=(n,c='USD')=>new Intl.NumberFormat('uk-UA',{style:'currency',currency:c,currencyDisplay:'narrowSymbol',minimumFractionDigits:c==='USD'?0:2,maximumFractionDigits:c==='USD'?0:2}).format(n), fmt=n=>new Intl.NumberFormat('uk-UA',{maximumFractionDigits:2}).format(n), fmtUsd=n=>new Intl.NumberFormat('uk-UA',{maximumFractionDigits:0}).format(n);
 let reportPayer='buyer',amountUnit='USD';
 const amountToUsd=(value,fx)=>amountUnit==='UAH'?value/fx:value;
 const amountFromUsd=(value,fx)=>amountUnit==='UAH'?value*fx:value;
+const amountInputValue=value=>DealCalc.formatAmountInput(String(Number(value.toFixed(amountUnit==='USD'?0:2))));
 let rows=DealCalc.defaults.map(r=>({...r})),mode='price',result=null,rateMeta=null,manual=false,fetching=false,editVersion=0;
 const readStore=k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}},saveStore=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
 if(readStore('deal-theme')==='dark')document.body.classList.add('dark');
@@ -11,7 +12,7 @@ $('theme').onclick=()=>{document.body.classList.toggle('dark');saveStore('deal-t
 function buildRows(){ $('rows').innerHTML=rows.map(r=>`<tr data-row="${r.id}" class="${r.payer==='none'?'disabled-row':''}"><td>${r.name}${r.bank?'<span class="fee-caption">+ 1% банку від суми збору</span>':''}</td><td><div class="fee-edit"><input aria-label="${r.name}: ставка або сума" type="number" min="0" max="1000000000" step="0.01" value="${r.value}" data-field="value"><select class="unit-select" aria-label="${r.name}: одиниця" data-field="unit">${[['%','%'],['UAH','₴'],['USD','$']].map(([v,t])=>`<option value="${v}" ${r.unit===v?'selected':''}>${t}</option>`).join('')}</select></div></td><td><div class="payer-control ${r.payer==='seller'?'is-seller':''}"><select aria-label="${r.name}: платник" data-field="payer">${[['none','Не враховувати'],['buyer','Покупець'],['seller','Продавець'],['half','Навпіл']].map(([v,t])=>`<option value="${v}" ${r.payer===v?'selected':''}>${t}</option>`).join('')}</select><svg class="payer-house" aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="m2 9 8-7 8 7M4 8v10h12V8M8 18v-6h4v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div></td><td class="right" id="fee-${r.id}">—</td></tr>`).join(''); }
 buildRows();
 $('rows').addEventListener('input',e=>{const field=e.target.dataset.field;if(!field)return;const row=rows.find(r=>r.id===e.target.closest('tr').dataset.row);row[field]=field==='value'?(e.target.value===''?NaN:Number(e.target.value)):e.target.value;e.target.closest('tr').classList.toggle('disabled-row',row.payer==='none');e.target.closest('tr').querySelector('.payer-control').classList.toggle('is-seller',row.payer==='seller');render()});
-function setMode(next){if(next===mode)return;if(result)$('amount').value=next==='budget'?amountFromUsd(result.buyerTotal,Number($('fx').value)).toFixed(2):amountFromUsd(result.price,Number($('fx').value)).toFixed(2);mode=next;for(const [id,val]of [['modePrice','price'],['modeBudget','budget']]){$(id).classList.toggle('active',mode===val);$(id).setAttribute('aria-pressed',String(mode===val))}$('amountLabel').textContent=mode==='price'?'Ціна квартири':'Загальний бюджет покупця';$('modeHint').textContent=mode==='price'?'Без оформлення та супроводу':'З оформленням та супроводом';render()}
+function setMode(next){if(next===mode)return;if(result)$('amount').value=amountInputValue(amountFromUsd(next==='budget'?result.buyerTotal:result.price,Number($('fx').value)));mode=next;for(const [id,val]of [['modePrice','price'],['modeBudget','budget']]){$(id).classList.toggle('active',mode===val);$(id).setAttribute('aria-pressed',String(mode===val))}$('amountLabel').textContent=mode==='price'?'Ціна квартири':'Загальний бюджет покупця';$('modeHint').textContent=mode==='price'?'Без оформлення та супроводу':'З оформленням та супроводом';render()}
 $('modePrice').onclick=()=>setMode('price');$('modeBudget').onclick=()=>setMode('budget');
 function invalid(msg){
  result=null;$('error').hidden=!msg;$('error').textContent=msg;$('amountUah').textContent='—';$('budgetNote').hidden=true;
@@ -20,7 +21,7 @@ function invalid(msg){
  for(const [id,label]of [['buyerCard','ПОКУПЦЯ'],['sellerCard','ПРОДАВЦЯ']])$(id).innerHTML=`<div class="report-audience">РОЗРАХУНОК ДЛЯ ${label}</div><p>Вкажи коректні параметри угоди, щоб побачити звіт.</p>`;
 }
 function render(){
- const enteredAmount=Number($('amount').value),fx=Number($('fx').value),valuation=Number($('valuation').value),amount=amountToUsd(enteredAmount,fx);
+ const enteredAmount=DealCalc.parseAmountInput($('amount').value),fx=Number($('fx').value),valuation=Number($('valuation').value),amount=amountToUsd(enteredAmount,fx);
  if($('amount').value===''){invalid('');return}
  if(!Number.isFinite(fx)||fx<=0||fx>10000){invalid(fetching?'':'Вкажи додатний курс долара або натисни ↻ для оновлення.');return}
  if($('amount').value===''||!Number.isFinite(enteredAmount)||enteredAmount<0||enteredAmount>1e9||!Number.isFinite(valuation)||valuation<0||valuation>1e9||rows.some(r=>!Number.isFinite(r.value)||r.value<0||r.value>1e9)){invalid('Введи невід’ємні суми та ставки (до 1 000 000 000).');return}
@@ -28,7 +29,7 @@ function render(){
  if(!result){invalid('Бюджет менший за обов’язкові платежі. Збільш бюджет або зміни умови оформлення.');return}
  $('error').hidden=true;$('pdfBuyer').disabled=$('pdfSeller').disabled=false;$('amountUah').textContent=amountUnit==='USD'?currency(amount*fx,'UAH'):currency(amount);
  $('budgetNote').hidden=mode!=='budget';$('budgetNote').textContent='Ціну квартири підібрано в межах бюджету. Залишок після округлення: '+currency(amount-result.buyerTotal)+'.';
- for(const r of result.lines){$('fee-'+r.id).textContent=r.payer==='none'?'—':fmt(r.total)+'\u00a0$';$('fee-'+r.id).title=r.bank?`Збір ${currency(r.tax)} + банк ${currency(r.bank)}`:currency(r.total)}
+ for(const r of result.lines){$('fee-'+r.id).textContent=r.payer==='none'?'—':fmtUsd(r.total)+'\u00a0$';$('fee-'+r.id).title=r.bank?`Збір ${currency(r.tax)} + банк ${currency(r.bank)}`:currency(r.total)}
  renderDetailCard('buyer');renderDetailCard('seller');
 }
 function notaryUah(r,payer='buyer'){return DealCalc.paymentUah(r,payer,Number($('fx').value))}
@@ -47,14 +48,33 @@ function renderDetailCard(payer){
 $('amountCurrency').onclick=()=>{
  const fx=Number($('fx').value),value=$('amount').value;
  if(!Number.isFinite(fx)||fx<=0||fx>10000){$('error').hidden=false;$('error').textContent='Спочатку вкажи коректний курс долара.';return}
- const usd=value===''?null:amountToUsd(Number(value),fx);
+ const usd=value===''?null:amountToUsd(DealCalc.parseAmountInput(value),fx);
  amountUnit=amountUnit==='USD'?'UAH':'USD';
  $('amountCurrency').textContent=amountUnit==='USD'?'$':'₴';
  $('amountCurrency').setAttribute('aria-label',amountUnit==='USD'?'Валюта суми: долари. Перемкнути на гривні':'Валюта суми: гривні. Перемкнути на долари');
- if(usd!==null&&Number.isFinite(usd))$('amount').value=amountFromUsd(usd,fx).toFixed(2);
+ if(usd!==null&&Number.isFinite(usd))$('amount').value=amountInputValue(amountFromUsd(usd,fx));
  render();
 };
-$('amount').oninput=render;$('valuation').oninput=render;
+function formatAmountField(){
+ const field=$('amount'),raw=field.value,start=field.selectionStart,end=field.selectionEnd;
+ const logical=position=>raw.slice(0,position).replace(/\s/g,'').length;
+ const from=logical(start),to=logical(end),formatted=DealCalc.formatAmountInput(raw);
+ if(formatted===raw)return;
+ const position=count=>{let digits=0,index=0;while(index<formatted.length&&digits<count){if(!/\s/.test(formatted[index]))digits++;index++}return index};
+ field.value=formatted;field.setSelectionRange(position(from),position(to));
+}
+$('amount').oninput=()=>{formatAmountField();render()};
+$('amount').addEventListener('beforeinput',event=>{
+ const field=event.target,start=field.selectionStart,end=field.selectionEnd,back=event.inputType==='deleteContentBackward',forward=event.inputType==='deleteContentForward';
+ if(start!==end||(!back&&!forward))return;
+ // Deleting next to a grouping space should remove a digit, not get stuck on the space.
+ if(back&&start>1&&/\s/.test(field.value[start-1])){
+  event.preventDefault();field.setRangeText('',start-2,start,'start');formatAmountField();render();
+ }else if(forward&&/\s/.test(field.value[start]||'x')){
+  event.preventDefault();field.setRangeText('',start,start+2,'start');formatAmountField();render();
+ }
+});
+$('valuation').oninput=render;
 $('fx').oninput=()=>{manual=true;editVersion++;$('rateStatus').textContent='Курс введено вручну';render()};
 const garantSource='https://garant.money/uk-UA/currency_rates/USD-UAH-kyiv';
 function validGarantRate(meta){return meta?.source==='garant-graph'&&Number.isFinite(meta.rate)&&meta.rate>0&&meta.rate<10000&&Number.isFinite(Date.parse(meta.fetchedAt))&&/^\d{4}-\d{2}-\d{2}$/.test(meta.rateDate||'')}
@@ -88,7 +108,7 @@ function printReport(payer){
  if(!result)return;
  const fx=Number($('fx').value),buyer=payer==='buyer',active=result.lines.filter(r=>r[payer]>0);
  const rateText=manual?'Курс введено вручну':rateMeta?'Курс графіка обмінника Гарант; отримано '+new Date(rateMeta.fetchedAt).toLocaleString('uk-UA',{timeZone:'Europe/Kyiv'}):'Курс введено вручну';
- $('printReport').innerHTML=`<div class="print-header"><span>${todayText}</span><span>Калькулятор угоди</span></div><h1>${buyer?'Покупець':'Продавець'} — деталізація</h1><p>Курс: ${fmt(fx)} грн / $ · ${rateText}<br>Оцінка: ${currency(Number($('valuation').value)||result.price)}</p><table><thead><tr><th>Стаття</th><th>Ставка / сума</th><th>Частка</th><th>Сума, $</th><th>Сума, грн</th></tr></thead><tbody><tr><td>Ціна квартири</td><td>${currency(result.price)}</td><td>100%</td><td>${fmt(result.price)}</td><td>${fmt(result.price*fx)}</td></tr>${active.map(r=>`<tr><td>${r.name}${r.id==='notary'?`<br><small>(${fmt(notaryUah(r,payer))} грн)</small>`:''}${r.bank?'<br><small>1% банку від збору враховано</small>':''}</td><td>${fmt(r.value)} ${r.unit==='UAH'?'грн':r.unit==='USD'?'$':'%'}</td><td>${r.payer==='half'?'50%':'100%'}</td><td>${fmt(r[payer])}</td><td>${fmt(DealCalc.paymentUah(r,payer,fx))}</td></tr>`).join('')}</tbody></table><p class="print-total">${buyer?'Загальна сума з усіма витратами':'Чистими на руки'}: ${currency(buyer?result.buyerTotal:result.sellerTotal)}</p><p>${currency((buyer?result.buyerTotal:result.sellerTotal)*fx,'UAH')}</p><small>Комісія агентства у цьому розрахунку — від фактичної ціни квартири.<br>ПДФО, пенсійний фонд та військовий збір — від більшої з двох сум: ціни квартири та оцінки. Банківська комісія становить 1% суми відповідного збору та врахована в підсумку. Суми округлюються до центів.</small>`;
+ $('printReport').innerHTML=`<div class="print-header"><span>${todayText}</span><span>Калькулятор угоди</span></div><h1>${buyer?'Покупець':'Продавець'} — деталізація</h1><p>Курс: ${fmt(fx)} грн / $ · ${rateText}<br>Оцінка: ${currency(Number($('valuation').value)||result.price)}</p><table><thead><tr><th>Стаття</th><th>Ставка / сума</th><th>Частка</th><th>Сума, $</th><th>Сума, грн</th></tr></thead><tbody><tr><td>Ціна квартири</td><td>${currency(result.price)}</td><td>100%</td><td>${fmtUsd(result.price)}</td><td>${fmt(result.price*fx)}</td></tr>${active.map(r=>`<tr><td>${r.name}${r.id==='notary'?`<br><small>(${fmt(notaryUah(r,payer))} грн)</small>`:''}${r.bank?'<br><small>1% банку від збору враховано</small>':''}</td><td>${r.unit==='USD'?fmtUsd(r.value):fmt(r.value)} ${r.unit==='UAH'?'грн':r.unit==='USD'?'$':'%'}</td><td>${r.payer==='half'?'50%':'100%'}</td><td>${fmtUsd(r[payer])}</td><td>${fmt(DealCalc.paymentUah(r,payer,fx))}</td></tr>`).join('')}</tbody></table><p class="print-total">${buyer?'Загальна сума з усіма витратами':'Чистими на руки'}: ${currency(buyer?result.buyerTotal:result.sellerTotal)}</p><p>${currency((buyer?result.buyerTotal:result.sellerTotal)*fx,'UAH')}</p><small>Комісія агентства у цьому розрахунку — від фактичної ціни квартири.<br>ПДФО, пенсійний фонд та військовий збір — від більшої з двох сум: ціни квартири та оцінки. Банківська комісія становить 1% суми відповідного збору та врахована в підсумку. Доларові суми показано з округленням до цілого долара.</small>`;
  window.print();
 }
 $('pdfBuyer').onclick=()=>printReport('buyer');$('pdfSeller').onclick=()=>printReport('seller');
