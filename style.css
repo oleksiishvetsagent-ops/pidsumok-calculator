@@ -90,3 +90,16 @@ header{display:grid;grid-template-columns:1fr auto 1fr;gap:16px}.brand{grid-colu
 
 .expenses-toggle{display:flex;align-items:center;justify-content:center;width:calc(100% - 40px);margin:0 20px 20px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--tint);color:var(--accent);font-size:12px;font-weight:600}.expenses-toggle[hidden],.expense-details[hidden]{display:none}.expenses.is-expanded .expenses-toggle{margin-bottom:16px}
 @media(min-width:861px){.expenses:not(.is-expanded) .expense-details{display:none}.expenses .section-heading{margin-bottom:14px}}
+
+/* Glass becomes a quiet texture in light mode and a deep surface in dark mode. */
+body.liquid-surface:not(.dark){background-color:#f5f7f6}
+body.liquid-surface::before{background-image:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,255,255,.88) 48%,rgba(255,255,255,.94)),url("assets/liquid-glass-v2.jpg")}
+body.liquid-surface.dark::before{background-image:linear-gradient(180deg,rgba(0,0,0,.62),rgba(0,0,0,.46) 48%,rgba(0,0,0,.64)),url("assets/liquid-glass-v2.jpg")}
+.liquid-surface:not(.dark) .brand{color:var(--ink);text-shadow:none}.liquid-surface:not(.dark) .brand-icon{border-color:var(--accent);background:#ffffff80}.liquid-surface:not(.dark) .version-meta,.liquid-surface:not(.dark) .header-right{color:var(--ink)}
+@media(min-width:861px){
+ .app{max-width:944px}.workspace{grid-template-columns:minmax(0,1.02fr) minmax(0,1fr)}
+ .workspace.fees-collapsed .reports-column{align-self:stretch;position:static;max-height:none}
+ .workspace.fees-collapsed .summaries{display:flex;flex:1;min-height:0;align-items:stretch}
+ .workspace.fees-collapsed .report-panel{width:100%;flex:1;max-height:none}
+ .workspace.fees-collapsed .buyer-card{flex:1}
+}

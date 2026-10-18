@@ -187,6 +187,7 @@ function syncExpensePanel(){
  const desktop=expenseDesktop.matches,open=!desktop||expensesExpanded;
  $('expenseDetails').hidden=!open;
  $('expensesCard').classList.toggle('is-expanded',open);
+ $('expensesCard').closest('.workspace').classList.toggle('fees-collapsed',desktop&&!expensesExpanded);
  $('toggleExpenses').hidden=!desktop;
  $('toggleExpenses').setAttribute('aria-expanded',String(open));
  $('toggleExpenses').textContent=expensesExpanded?'Згорнути витрати':'Уточнити витрати';
