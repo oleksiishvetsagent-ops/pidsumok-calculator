@@ -22,6 +22,8 @@
   const clone=source.cloneNode(true);clone.removeAttribute('id');clone.querySelectorAll('[id]').forEach(e=>e.removeAttribute('id'));
   // Preserve the current article padding and all text, including scrolled-out rows.
   const computed=getComputedStyle(source);clone.style.padding=computed.padding;
+  // Extra blank line for chat timestamps, without changing the on-site card.
+  clone.style.paddingBottom=(parseFloat(computed.paddingBottom)||0)+24+'px';
   shell.append(clone);document.body.append(shell);
   try{
    const canvas=await window.html2canvas(shell,{scale:Math.min(3,Math.max(2,window.devicePixelRatio||1)),backgroundColor:getComputedStyle(shell).backgroundColor,logging:false,useCORS:true,scrollX:0,scrollY:0});

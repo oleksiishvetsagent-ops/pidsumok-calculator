@@ -82,7 +82,7 @@ const cached=readStore('deal-garant-rate');if(validGarantRate(cached)){rateMeta=
 $('quickCalculate').onclick=()=>{
  render();if(!result){$('error').hidden=false;$('error').textContent=$('amount').value===''?'Введи ціну квартири, щоб порахувати.':$('error').textContent;$('amount').focus();return}
  $('amount').blur();$('valuation').blur();$('fx').blur();selectReport('buyer');
- requestAnimationFrame(()=>$('buyerPanel').parentElement.parentElement.scrollIntoView({behavior:motionPreference.matches?'auto':'smooth',block:'start'}));
+ requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo({top:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight),behavior:motionPreference.matches?'auto':'smooth'})));
 };
 function printReport(payer){
  if(!result)return;
