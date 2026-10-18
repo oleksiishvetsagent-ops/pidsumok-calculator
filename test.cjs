@@ -57,3 +57,25 @@ for(const [raw,formatted,numeric] of [
 for(const invalid of ['',',','1,2,3','80000abc','1e6','1.000.000'])assert(Number.isNaN(parseAmountInput(invalid)));
 assert.equal(formatAmountInput('80000abc'),'80000abc');
 console.log('Passed grouped amount editing, decimal preservation and strict validation.');
+
+// Formatting changes must not alter calculation precision or expose the notary split.
+const reportSource=fs.readFileSync('./app.js','utf8');
+const reportElements={fx:{value:'44.9'},valuation:{value:''},buyerCard:{innerHTML:''},sellerCard:{innerHTML:''},printReport:{innerHTML:''}};
+const reportContext={document:{getElementById:id=>reportElements[id]},DealCalc:context.DealCalc,window:{print(){}},Intl};vm.createContext(reportContext);
+vm.runInContext(reportSource.split('\n')[1]+"\nconst result=DealCalc.calculate(110000,44.9,0,DealCalc.defaults),todayText='18 жовтня 2026',manual=true,rateMeta=null;",reportContext);
+vm.runInContext(reportSource.slice(reportSource.indexOf('function notaryUah('),reportSource.indexOf('function selectReport(')),reportContext);
+vm.runInContext(reportSource.slice(reportSource.indexOf('function renderDetailCard('),reportSource.indexOf("$('amountCurrency').onclick=")),reportContext);
+vm.runInContext(reportSource.slice(reportSource.indexOf('function printReport('),reportSource.indexOf("$('pdfBuyer').onclick=")),reportContext);
+for(const payer of ['buyer','seller']){
+ vm.runInContext(`renderDetailCard('${payer}');printReport('${payer}')`,reportContext);
+ const card=reportElements[payer+'Card'].innerHTML.replace(/\u00a0/g,' '),pdf=reportElements.printReport.innerHTML.replace(/\u00a0/g,' ');
+ assert(!card.includes('Частка'));assert(card.includes('(5 000 грн)'));assert(!/(?<!\d)10 000/.test(card));assert(!/(?<!\d)10 000/.test(pdf));assert(!pdf.includes('50%'));
+ const total=card.match(/report-amounts"><strong>(.*?)<\/strong>/)[1];
+ assert.equal(total,payer==='seller'?'108 766,37 $':'116 722 $');
+ for(const match of card.matchAll(/<small[^>]*>\((.*?) грн\)<\/small>/g))assert(!match[1].includes(','));
+ const cells=[...pdf.matchAll(/<tr>(.*?)<\/tr>/gs)].map(row=>[...row[1].matchAll(/<td>(.*?)<\/td>/gs)].map(cell=>cell[1]));
+ for(const row of cells.filter(row=>row.length===5)){assert(!row[3].includes(','));assert(!row[4].includes(','))}
+ assert(pdf.includes('44,9 грн / $'));
+ assert(pdf.includes(payer==='seller'?'Чистими на руки: 108 766,37 $':'Загальна сума з усіма витратами: 116 722 $'));
+}
+console.log('Passed exact seller net, rounded report currencies and private notary allocation.');
