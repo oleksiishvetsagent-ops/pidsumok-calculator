@@ -27,3 +27,14 @@ for(let i=0;i<1000;i++){
  assert(Math.round(deal.buyerTotal*fx*100)<=Math.round(uah*100));
 }
 console.log('Passed UAH budget round-trip and 1000 currency budget bounds.');
+
+// Preserve native UAH payments instead of converting rounded USD back to UAH.
+const {paymentUah}=context.DealCalc;
+let notary=calculate(80000,44.9,0,defaults).lines.find(r=>r.id==='notary');
+assert.equal(notary.buyer,111.36);assert.equal(paymentUah(notary,'buyer',44.9),5000);assert.equal(paymentUah(notary,'seller',44.9),0);
+const halfRows=defaults.map(r=>r.id==='notary'?{...r,value:5000.01,payer:'half'}:{...r});
+notary=calculate(80000,44.9,0,halfRows).lines.find(r=>r.id==='notary');
+assert.equal(paymentUah(notary,'buyer',44.9),2500.01);assert.equal(paymentUah(notary,'seller',44.9),2500);
+const usdRows=defaults.map(r=>r.id==='notary'?{...r,value:100,unit:'USD'}:{...r});
+notary=calculate(80000,44.9,0,usdRows).lines.find(r=>r.id==='notary');assert.equal(paymentUah(notary,'buyer',44.9),4490);
+console.log('Passed native UAH display, half payment allocation and USD conversion.');
