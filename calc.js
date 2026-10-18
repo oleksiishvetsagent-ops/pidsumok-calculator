@@ -2,7 +2,7 @@
 const defaults = [
 {id:'pension',name:'Пенсійний фонд',value:1,unit:'%',payer:'buyer',bank:true,base:'valuation'},
 {id:'agency',name:'Послуги агенції',value:5,unit:'%',payer:'buyer',bank:false,base:'price'},
-{id:'notary',name:'Нотаріальні послуги',value:5000,unit:'UAH',payer:'buyer',bank:false,base:'price'},
+{id:'notary',name:'Нотаріус',value:5000,unit:'UAH',payer:'buyer',bank:false,base:'price'},
 {id:'income',name:'ПДФО',value:5,unit:'%',payer:'none',bank:true,base:'max'},
 {id:'military',name:'Військовий збір',value:5,unit:'%',payer:'none',bank:true,base:'max'},
 {id:'duty',name:'Державне мито',value:1,unit:'%',payer:'seller',bank:false,base:'price'},
