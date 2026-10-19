@@ -128,3 +128,15 @@ body.liquid-surface.dark::before{background-image:linear-gradient(180deg,rgba(0,
 @media(max-width:460px){.parameters .segmented button{min-width:0;white-space:nowrap;letter-spacing:-.3px}}
 .parameters,.parameters .form-grid>div{min-width:0}
 @media(max-width:360px){.parameters .segmented button{white-space:normal;letter-spacing:normal}}
+
+/* Client detail: subtle three-column table, with no visible column headings. */
+.report-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;border:1px solid var(--paper-line);border-radius:7px;overflow:hidden;margin-top:7px}
+.report-table .payment-name{width:44%}.report-table .payment-usd{width:25%}.report-table .payment-uah{width:31%}
+.report-table th,.report-table td{padding:8px 7px;border:0;background:transparent;color:var(--paper-ink);vertical-align:middle;letter-spacing:normal;overflow-wrap:anywhere}
+.report-table th{font-size:13.2px;font-weight:400;line-height:16.5px;text-align:left;width:auto}
+.report-table .payment-dollar{font-size:14.3px;font-weight:500;line-height:18px;text-align:right}
+.report-table .payment-hryvnia{font-size:11px;font-weight:400;line-height:13.5px;text-align:right;color:var(--paper-muted)}
+.report-table th small{display:block;font-size:11px;font-weight:400;line-height:13.5px;color:var(--paper-muted);margin-top:3px}
+.report-table tr+tr>*{border-top:1px solid var(--paper-line)}.report-table tr>*+*{border-left:1px solid var(--paper-line)}
+.report-table .no-payments{font-size:12px;line-height:16px;color:var(--paper-muted)}
+@media(max-width:360px){.report-table th,.report-table td{padding:8px 5px}.report-table .payment-dollar{font-size:13.2px}}

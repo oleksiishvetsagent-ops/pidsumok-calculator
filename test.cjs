@@ -69,7 +69,7 @@ vm.runInContext(reportSource.slice(reportSource.indexOf('function printReport(')
 for(const payer of ['buyer','seller']){
  vm.runInContext(`renderDetailCard('${payer}');printReport('${payer}')`,reportContext);
  const card=reportElements[payer+'Card'].innerHTML.replace(/\u00a0/g,' '),pdf=reportElements.printReport.innerHTML.replace(/\u00a0/g,' ');
- assert(!card.includes('Частка'));assert(card.includes('(5 000 грн)'));assert(!/(?<!\d)10 000/.test(card));assert(!/(?<!\d)10 000/.test(pdf));assert(!pdf.includes('50%'));
+ assert(!card.includes('Частка'));assert(card.includes('5 000 грн'));assert(!/(?<!\d)10 000/.test(card));assert(!/(?<!\d)10 000/.test(pdf));assert(!pdf.includes('50%'));
  const total=card.match(/report-amounts"><strong>(.*?)<\/strong>/)[1];
  assert.equal(total,payer==='seller'?'108 766,37 $':'116 722 $');
  for(const match of card.matchAll(/<small[^>]*>\((.*?) грн\)<\/small>/g))assert(!match[1].includes(','));
@@ -79,3 +79,22 @@ for(const payer of ['buyer','seller']){
  assert(pdf.includes(payer==='seller'?'Чистими на руки: 108 766,37 $':'Загальна сума з усіма витратами: 116 722 $'));
 }
 console.log('Passed exact seller net, rounded report currencies and private notary allocation.');
+
+// Both parties see only their allocated payments, in USD and native UAH.
+vm.runInContext(`
+ const sharedRows=DealCalc.defaults.map(r=>r.id==='agency'?{...r,payer:'half'}:{...r});
+ Object.assign(result,DealCalc.calculate(110000,44.9,0,sharedRows));
+`,reportContext);
+for(const payer of ['buyer','seller']){
+ vm.runInContext(`renderDetailCard('${payer}')`,reportContext);
+ const card=reportElements[payer+'Card'].innerHTML.replace(/\u00a0/g,' ');
+ const table=card.match(/<table class="report-table"[\s\S]*?<\/table>/)[0];
+ assert(!table.includes('<thead'));assert(!table.includes('Частка'));assert(!table.includes('50%'));
+ const rows=[...table.matchAll(/<tr>(.*?)<\/tr>/gs)].map(m=>m[1]);
+ const agency=rows.find(row=>row.includes('Послуги агенції')),notary=rows.find(row=>row.includes('Нотаріус'));
+ assert(agency.includes('2 750 $'));assert(agency.includes('123 475 грн'));
+ assert(notary.includes('111 $'));assert(notary.includes('5 000 грн'));
+ for(const row of rows)assert.equal([...row.matchAll(/<t[hd][ >]/g)].length,3);
+ if(payer==='buyer'){assert(table.includes('+ комісія банку'));assert(!table.includes('вже враховано'));assert(table.includes('49 884 грн'))}
+}
+console.log('Passed three-column client detail, exact payer allocations and simple bank note.');
